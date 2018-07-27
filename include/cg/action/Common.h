@@ -71,7 +71,11 @@
 namespace zillians { namespace cg { namespace action { namespace detail {
 
 template<typename T>
-struct is_fusion_vector : boost::is_base_of<boost::fusion::sequence_base<T>, T>
+struct is_fusion_vector : boost::mpl::false_
+{ };
+
+template<typename... T>
+struct is_fusion_vector<boost::fusion::vector<T...>> : boost::mpl::true_
 { };
 
 template<typename T>
@@ -88,35 +92,35 @@ struct attribute_accessor_impl;
 template<int N, typename Attribute>
 struct attribute_accessor_impl<N, Attribute, true>
 {
-	typedef typename boost::add_reference<
-	            typename boost::mpl::at_c<typename Attribute::types, N>::type
-	        >::type result_type;
+    typedef typename boost::add_reference<
+                typename boost::fusion::result_of::at<Attribute, boost::mpl::int_<N>>::type
+            >::type result_type;
 
-	static result_type get(Attribute& attribute)
-	{
-		return boost::fusion::at_c<N>(attribute);
-	}
+    static result_type get(Attribute& attribute)
+    {
+        return boost::fusion::at<boost::mpl::int_<N>>(attribute);
+    }
 };
 
 template<int N, typename Attribute>
 struct attribute_accessor_impl<N, Attribute, false>
 {
-	typedef typename boost::add_reference<Attribute>::type result_type;
-	static result_type get(Attribute& attribute)
-	{
-		BOOST_MPL_ASSERT(( boost::mpl::bool_<N == 0> ));
-		return attribute;
-	}
+    typedef typename boost::add_reference<Attribute>::type result_type;
+    static result_type get(Attribute& attribute)
+    {
+        BOOST_MPL_ASSERT(( boost::mpl::bool_<N == 0> ));
+        return attribute;
+    }
 };
 
 template<int N, typename Attribute>
 struct attribute_accessor
 {
-	typedef typename attribute_accessor_impl<N, Attribute, is_fusion_vector<Attribute>::value>::result_type result_type;
-	static result_type get(Attribute& attribute)
-	{
-		return attribute_accessor_impl<N, Attribute, is_fusion_vector<Attribute>::value>::get(attribute);
-	}
+    typedef typename attribute_accessor_impl<N, Attribute, is_fusion_vector<Attribute>::value>::result_type result_type;
+    static result_type get(Attribute& attribute)
+    {
+        return attribute_accessor_impl<N, Attribute, is_fusion_vector<Attribute>::value>::get(attribute);
+    }
 };
 
 } } } }
